@@ -1,17 +1,17 @@
-# Config file for automatic testing at travis-ci.org
+# Config file for automatic testing at travis-ci.com
 
 language: python
 python:
+  - 3.8
   - 3.7
   - 3.6
   - 3.5
-  - 2.7
 
 # Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: {% if cookiecutter.use_pipenv == 'y' %}pipenv{% else %}pip{% endif %} install -U tox-travis
+install: poetry add tox-travis
 
 # Command to run tests, e.g. python setup.py test
-script: {% if cookiecutter.use_pipenv == 'y' %}pipenv run {% endif %}tox
+script: poetry run tox
 
 {% if cookiecutter.use_pypi_deployment_with_travis == 'y' -%}
 # Assuming you have installed the travis-ci CLI tool, after you
@@ -27,5 +27,5 @@ deploy:
   on:
     tags: true
     repo: {{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}
-    python: 3.7
+    python: 3.8
 {%- endif %}

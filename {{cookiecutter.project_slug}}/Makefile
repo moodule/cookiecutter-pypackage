@@ -4,10 +4,7 @@
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
 
-try:
-	from urllib import pathname2url
-except:
-	from urllib.request import pathname2url
+from urllib.request import pathname2url
 
 webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
 endef
@@ -26,18 +23,10 @@ export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
-ENVIRONMENT := {% if cookiecutter.use_pipenv == 'y' %}pipenv run {% endif %}
+ENVIRONMENT := poetry run
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
-
-{%- if cookiecutter.use_pipenv == 'y' %}
-init:	
-	pipenv --three
-	pipenv install --dev --skip-lock
-	pipenv install -r requirements.txt
-	pipenv run python setup.py develop
-{%- endif %}
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
@@ -67,7 +56,7 @@ test: ## run tests quickly with the default Python
 {%- if cookiecutter.use_pytest == 'y' %}
 	$(ENVIRONMENT) pytest
 {%- else %}
-	$(ENVIRONMENT) python setup.py test
+	$(ENVIRONMENT) python -m unittest
 {%- endif %}
 
 test-all: ## run tests on every Python version with tox
@@ -81,7 +70,7 @@ coverage: ## check code coverage quickly with the default Python
 {%- endif %}
 	$(ENVIRONMENT) coverage report -m
 	$(ENVIRONMENT) coverage html
-	$(BROWSER) htmlcov/index.html
+	$(ENVIRONMENT) $(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/{{ cookiecutter.project_slug }}.rst
@@ -89,18 +78,14 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(ENVIRONMENT) sphinx-apidoc -o docs/ {{ cookiecutter.project_slug }}
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
-	$(BROWSER) docs/_build/html/index.html
+	$(ENVIRONMENT) $(BROWSER) docs/_build/html/index.html
 
 servedocs: docs ## compile the docs watching for changes
 	$(ENVIRONMENT) watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
-release: dist ## package and upload a release
-	$(ENVIRONMENT) twine upload dist/*
-
-dist: clean ## builds source and wheel package
-	$(ENVIRONMENT) python setup.py sdist
-	$(ENVIRONMENT) python setup.py bdist_wheel
-	ls -l dist
-
 install: clean ## install the package to the active Python's site-packages
-	$(ENVIRONMENT) python setup.py install
+	poetry install
+
+release: ## package and upload a release
+	poetry build
+	poetry publish
